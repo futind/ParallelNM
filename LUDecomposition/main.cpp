@@ -12,6 +12,21 @@ void calculateLUsubblocks(double* A, double* L, double* U, int N, int distance_f
 void calculateA22(double* A, double* L, double* U, int N, int distance_from_start, int current_block_size, int multiplication_block_size);
 void LU_Decomposition(double* A, double* L, double* U, int n);
 
+
+void matrixMultiplication(double* A, int rowsA, int columnsA,
+						  double* B, int rowsB, int columnsB,
+						  double* C, int rowsC, int columnsC,
+						  int multiplication_block_size);
+void matrixDifference(double* A, int rowsA, int columnsA,
+					  double* B, int rowsB, int columnsB,
+					  double* C, int rowsC, int columnsC);
+double eucledian_norm(double* M, int rows, int columns);
+void zeroMatrix(double* M, int rows, int columns);
+void showMatrix(double* M, int rows, int columns, std::string name);
+void RNGMatrix(double* M, int rows, int columns);
+void CopyMatrix(double* FROM, double* INTO, int rows, int columns);
+
+
 // function that performs a step of Gaussian elimination
 void GaussianElimination(double* L, double* U, int N, int pivot_idx, int border)
 {
@@ -177,6 +192,8 @@ void LU_Decomposition(double* A, double* L, double* U, int n)
 	}
 }
 
+// a function that calulates the prouct of matrices A and B
+// which is saved in matrix C
 void matrixMultiplication(double* A, int rowsA, int columnsA,
 						  double* B, int rowsB, int columnsB,
 						  double* C, int rowsC, int columnsC,
@@ -202,6 +219,8 @@ void matrixMultiplication(double* A, int rowsA, int columnsA,
 		multiplication_block_size = std::min({ rowsA, columnsA, rowsB, columnsB });
 	}
 
+	zeroMatrix(C, rowsC, columnsC);
+
 	#pragma omp parallel for collapse(3) schedule(guided)
 	for (int bi = 0; bi < rowsA; bi += multiplication_block_size)
 	{
@@ -224,6 +243,7 @@ void matrixMultiplication(double* A, int rowsA, int columnsA,
 	}
 }
 
+// a function that cal
 void matrixDifference(double* A, int rowsA, int columnsA,
 					  double* B, int rowsB, int columnsB,
 					  double* C, int rowsC, int columnsC)
@@ -236,6 +256,7 @@ void matrixDifference(double* A, int rowsA, int columnsA,
 	{
 		throw std::logic_error("THE RESULTING MATRIX HAS INCORRENT DIMENSIONS");
 	}
+
 	#pragma omp parallel for
 	for (int i = 0; i < rowsA; ++i)
 	{
@@ -247,72 +268,81 @@ void matrixDifference(double* A, int rowsA, int columnsA,
 
 }
 
-double eucledian_norm(double* A, int n)
+// a function that calculates euclidian norm of the matrix M
+double eucledian_norm(double* M, int rows, int columns)
 {
 	double sum = 0;
 	#pragma omp parallel for
-	for (int i = 0; i < n; ++i)
+	for (int i = 0; i < rows; ++i)
 	{
-		for (int j = 0; j < n; ++j)
+		for (int j = 0; j < columns; ++j)
 		{
-			sum += std::pow(std::abs(A[i * n + j]), 2);
+			sum += M[i * columns + j] * M[i * columns + j];
 		}
 	}
 	return std::sqrt(sum);
 }
 
-void zeroMatrix(double* M, int N)
+// a function that sets all the elements of the matrix M to zero
+void zeroMatrix(double* M, int rows, int columns)
 {
 	#pragma omp parallel for
-	for (int i = 0; i < N; ++i)
+	for (int i = 0; i < rows; ++i)
 	{
-		for (int j = 0; j < N; ++j)
+		for (int j = 0; j < columns; ++j)
 		{
-			M[i * N + j] = 0.0;
+			M[i * columns + j] = 0.0;
 		}
 	}
 }
 
-void showMatrix(double* M, int N, std::string name)
+// a function that shows the matrix M using standard output
+void showMatrix(double* M, int rows, int columns, std::string name)
 {
 	std::cout << "Matrix " << name << std::endl;
 	std::cout.precision(16);
-	for (int i = 0; i < N; ++i)
+	for (int i = 0; i < rows; ++i)
 	{
-		for (int j = 0; j < N; ++j)
+		for (int j = 0; j < columns; ++j)
 		{	
-			std::cout << std::setw(18) << M[i * N + j] << " ";
+			std::cout << std::setw(18) << M[i * columns+ j] << " ";
 		}
 		std::cout << std::endl;
 	}
 	std::cout << std::endl;
 }
 
-void RNGMatrix(double* M, int N)
+// a function that assignes randomly generated values 
+// to the elemets of the matrix M
+void RNGMatrix(double* M, int rows, int columns)
 {
 	std::uniform_real_distribution<double> uniform(2, 10000);
 	std::default_random_engine dre(std::chrono::system_clock::now().time_since_epoch().count());
 	#pragma omp parallel for
-	for (int i = 0; i < N; ++i)
+	for (int i = 0; i < rows; ++i)
 	{
-		for (int j = 0; j < N; ++j)
+		for (int j = 0; j < columns; ++j)
 		{
-			M[i * N + j] = uniform(dre);
+			M[i * columns + j] = uniform(dre);
 		}
 	}
 }
 
-void CopyMatrix(double* FROM, double* INTO, int N)
+// a function that copies one matrix from FROM to matrix INTO
+void CopyMatrix(double* FROM, double* INTO, int rows, int columns)
 {
 	#pragma omp parallel for
-	for (int i = 0; i < N; ++i)
+	for (int i = 0; i < rows; ++i)
 	{
-		for (int j = 0; j < N; ++j)
+		for (int j = 0; j < columns; ++j)
 		{
-			INTO[i * N + j] = FROM[i * N + j];
+			INTO[i * columns + j] = FROM[i * columns + j];
 		}
 	}
 }
+
+
+
 
 int main()
 {
@@ -327,8 +357,8 @@ int main()
 	double* L_p = new double[N * N];
 	double* U_p = new double[N * N];
 	// initializing L_p and U_p with zeroes
-	zeroMatrix(L_p, N);
-	zeroMatrix(U_p, N);
+	zeroMatrix(L_p, N, N);
+	zeroMatrix(U_p, N, N);
 
 	// matrices A, L and U containing the result of the 
 	// standard version of the LU_decomposition algorithm
@@ -336,14 +366,14 @@ int main()
 	double* L_s = new double[N * N];
 	double* U_s = new double[N * N];
 	// initializing L_S and U_S with zeroes
-	zeroMatrix(L_s, N);
-	zeroMatrix(U_s, N);
+	zeroMatrix(L_s, N, N);
+	zeroMatrix(U_s, N, N);
 
 	// Initializing the original A matrix with random generated values
-	RNGMatrix(A, N);
+	RNGMatrix(A, N, N);
 	// Copying the original matrix A into block and standard versions
-	CopyMatrix(A, A_p, N);
-	CopyMatrix(A, A_s, N);
+	CopyMatrix(A, A_p, N, N);
+	CopyMatrix(A, A_s, N, N);
 
 	// Showing the original matrix A
 	//showMatrix(A, N, "A");
@@ -355,7 +385,7 @@ int main()
 	/* Getting number of milliseconds as a double. */
 	std::chrono::duration<double, std::milli> ms_double = ts2 - ts1;
 
-	std::cout << "PARALLEL STANDARD: " << ms_double.count() << "ms\n";
+	std::cout << "PARALLEL STANDARD: " << ms_double.count() << " ms" << std::endl;
 
 	// Performing block LU decomposition
 	auto t1 = std::chrono::high_resolution_clock::now();
@@ -364,7 +394,7 @@ int main()
 	/* Getting number of milliseconds as a double. */
 	std::chrono::duration<double, std::milli> mp_double = t2 - t1;
 
-	std::cout << "PARALLEL BlOCK: " << mp_double.count() << "ms\n";
+	std::cout << "PARALLEL BlOCK: " << mp_double.count() << " ms" << std::endl;
 
 	// Now, lets show L_s, L_p
 	//showMatrix(L_s, N, "L_s");
@@ -376,29 +406,38 @@ int main()
 
 	// Now lets multiplicate L_s and U_s
 	// We will save the result of that multiplication into matrix A_s
-	zeroMatrix(A_s, N);
 	matrixMultiplication(L_s, N, N, U_s, N, N, A_s, N, N, 64);
 	// Now, lets subract matrix A_s from matrix A, and take its norm
 	double* A_s_diff = new double[N * N];
 	matrixDifference(A_s, N, N, A, N, N, A_s_diff, N, N);
-	std::cout << "||A - L_s * U_s|| = " << std::setprecision(8) << eucledian_norm(A_s_diff, N) << std::endl;
+	std::cout << "||A - L_s * U_s|| = " << std::setprecision(8) 
+										<< eucledian_norm(A_s_diff, N, N) 
+										<< std::endl;
 
 	// Now lets do the same for L_p and U_p
-	zeroMatrix(A_p, N);
 	matrixMultiplication(L_p, N, N, U_p, N, N, A_p, N, N, 64);
 	double* A_p_diff = new double[N * N];
 	matrixDifference(A_p, N, N, A, N, N, A_p_diff, N, N);
-	std::cout << "||A - L_p * U_p|| = " << std::setprecision(8) << eucledian_norm(A_p_diff, N) << std::endl;
+	std::cout << "||A - L_p * U_p|| = " << std::setprecision(8) 
+										<< eucledian_norm(A_p_diff, N, N) 
+										<< std::endl;
 
 	// calculating and showing euclidian norm of the original matrix, 
-	std::cout << "||A|| = " << std::setprecision(16) << eucledian_norm(A, N) << std::endl;
-	std::cout << "||A_s|| = " << std::setprecision(16) << eucledian_norm(A_s, N) << std::endl;
-	std::cout << "||A_p|| = " << std::setprecision(16) << eucledian_norm(A_p, N) << std::endl;
+	std::cout << "||A|| = " << std::setprecision(16) 
+							<< eucledian_norm(A, N, N) << std::endl;
+	std::cout << "||A_s|| = " << std::setprecision(16) 
+							  << eucledian_norm(A_s, N, N) << std::endl;
+	std::cout << "||A_p|| = " << std::setprecision(16) 
+							  << eucledian_norm(A_p, N, N) << std::endl;
 
 	// now, calculating and showing the result of ||A - L_s * U_s|| / ||A||
-	std::cout << "||A - L_s * U_s|| / ||A|| = " << std::setprecision(16) << eucledian_norm(A_s_diff, N) / eucledian_norm(A, N) << std::endl;
+	std::cout << "||A - L_s * U_s|| / ||A|| = " << std::setprecision(16) 
+												<< eucledian_norm(A_s_diff, N, N) / eucledian_norm(A, N, N) 
+												<< std::endl;
 	// now, calculating and showing the result of ||A - L_p * U_p|| / ||A||
-	std::cout << "||A - L_p * U_p|| / ||A|| = " << std::setprecision(16) << eucledian_norm(A_p_diff, N) / eucledian_norm(A, N) << std::endl;
+	std::cout << "||A - L_p * U_p|| / ||A|| = " << std::setprecision(16) 
+												<< eucledian_norm(A_p_diff, N, N) / eucledian_norm(A, N, N) 
+												<< std::endl;
 
 	delete[] A;
 	delete[] A_s;
